@@ -161,6 +161,9 @@ int main() {
                 if (occupancyGrid[row][col] == 1) {
                     DrawRectangle(screenX, screenY, cellSize, cellSize, PURPLE);
                 }
+                else if (occupancyGrid[row][col] == 0) {
+                    DrawRectangle(screenX, screenY, cellSize, cellSize, DARKGREEN);
+                }
                 DrawRectangleLines(screenX, screenY, cellSize, cellSize, DARKBLUE);
             }
         }
@@ -187,6 +190,7 @@ int main() {
                         occupancyGrid[row][col] = 0;
 
                     }
+
                 }
 
             }
