@@ -104,6 +104,7 @@ int main() {
         {150.0f, 500.0f, 400.0f, 50.0f}
     };
 
+    bool showWalls = true;
 
     while (!WindowShouldClose()) {
         // 1. Read input and update position
@@ -136,6 +137,11 @@ int main() {
         lidar.update(dt, robotX, robotY, walls, sensorStep);
 
 
+        //toggle walls:
+        if (IsKeyPressed(KEY_H)) {
+            showWalls = !showWalls;
+        }
+
 
 
 
@@ -146,8 +152,10 @@ int main() {
         ClearBackground(BLACK);
         //for loop for all 36 rays
         //drawing the walls
-        for (const Rectangle &wall: walls) {
-            DrawRectangleRec(wall, RED);
+        if (showWalls) {
+            for (const Rectangle &wall: walls) {
+                DrawRectangleRec(wall, RED);
+            }
         }
         for (int i=0; i<36; i++) {
             //ray angle calculation
