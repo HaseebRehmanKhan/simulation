@@ -1,0 +1,61 @@
+
+# ==========================================
+# C++ Robotics Simulator - .gitignore
+# ==========================================
+
+# CLion / JetBrains IDE
+.idea/
+*.iml
+
+# CMake build directories
+cmake-build-*/
+build/
+build-*/
+out/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+Makefile
+Testing/
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.o
+*.obj
+*.out
+
+# Debug symbols
+*.pdb
+*.ilk
+*.dSYM/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*~
+
+# Windows system files
+Thumbs.db
+Desktop.ini
+
+# macOS system files
+.DS_Store
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.suo
+*.user
+*.sln
+*.vcxproj*

@@ -23,7 +23,7 @@ private:
     float angle = 0.0f;
     float range = 200.0f;
     float rotationSpeed = 2.0f;
-    float detectedDistance = 200.0f;
+    std::vector<float> detectedDistances = std::vector<float>(36, 200);
 
 public:
     void update(
@@ -33,37 +33,48 @@ public:
         const std::vector<Rectangle> &walls,
         float sensorStep) {
         angle += rotationSpeed * dt;
-        detectedDistance = range;
-        bool hit = false;
-        for (float distance = 0.0f;
+
+
+        for (int i =0; i<detectedDistances.size(); i++) {
+
+            float rayAngle = angle + i * (2 * PI / 36);
+            bool hit = false;
+            detectedDistances[i] = range;
+            for (float distance = 0.0f;
              distance <= range && !hit;
              distance += sensorStep) {
-            Vector2 sensorPoint = {
-                robotX + distance * std::cos(angle),
-                robotY + distance * std::sin(angle )
-            };
-            for (const Rectangle& wall : walls) {
-                if (CheckCollisionPointRec(sensorPoint, wall)) {
-                    hit = true;
-                    detectedDistance = distance;
-                    break;
+                Vector2 sensorPoint = {
+                    robotX + distance * std::cos(rayAngle),
+                    robotY + distance * std::sin(rayAngle )
+                };
+                for (const Rectangle& wall : walls) {
+                    if (CheckCollisionPointRec(sensorPoint, wall)) {
+                        hit = true;
+                        detectedDistances[i] = distance;
+                        break;
+                    }
                 }
-            }
+             }
 
-
-        };
+        }
     }
+
+
 
     float getAngle() const {
         return angle;
     }
 
-    float getDetectedDistance() const {
-        return detectedDistance;
+    float getDetectedDistance(int index) const {
+        return detectedDistances[index];
+
     }
     float getRotationSpeed() const {
         return rotationSpeed;
     }
+
+
+
 };
 
 int main() {
@@ -79,9 +90,9 @@ int main() {
     LidarSensor lidar;
     float sensorStep = 1.0f;
 
-    InitWindow(screenWidth, screenHeight, "Robot Simulator");
+    InitWindow(screenWidth, screenHeight, "Simulation");
     SetTargetFPS(60);
-
+    //vector containing walls
     std::vector<Rectangle> walls = {
         {400.0, 200.0, 100.0, 250.0},
         {650.0f, 100.0f, 80.0f, 300.0f},
@@ -94,7 +105,7 @@ int main() {
         float dt = GetFrameTime();
         float proposedX = robotX;
         float proposedY = robotY;
-
+        //movement
         if (IsKeyDown(KEY_W)) proposedY -= robotSpeed * dt;
         if (IsKeyDown(KEY_S)) proposedY += robotSpeed * dt;
         if (IsKeyDown(KEY_A)) proposedX -= robotSpeed * dt;
@@ -123,35 +134,43 @@ int main() {
 
 
 
-        float rayEndX = robotX + lidar.getDetectedDistance() * std::cos(lidar.getAngle());
-        float rayEndY = robotY + lidar.getDetectedDistance() * std::sin(lidar.getAngle());
 
-        // 2. Draw the scene
+        //Draw the scene
         BeginDrawing();
         ClearBackground(BLACK);
-        DrawLine(
+        //for loop for all 36 rays
+        for (int i=0; i<36; i++) {
+            //ray angle calculation
+            float rayAngle = lidar.getAngle() + i * (2 * PI / 36);
+
+            //calculating euclidean ray end points
+            float rayEndX = robotX + lidar.getDetectedDistance(i) * std::cos(rayAngle);
+            float rayEndY = robotY + lidar.getDetectedDistance(i) * std::sin(rayAngle);
+            //drawing the rays
+            DrawLine(
             static_cast<int>(robotX),
             static_cast<int>(robotY),
             static_cast<int>(rayEndX),
             static_cast<int>(rayEndY),
-            GREEN
-        );
+                GREEN
+            );
+        }
+        //drawing the walls
         for (const Rectangle &wall: walls) {
             DrawRectangleRec(wall, RED);
         }
 
-
+        //drawing the robot
         DrawCircle(
             static_cast<int>(robotX),
             static_cast<int>(robotY),
             robotRadius,
             BLUE
         );
-
-        DrawText("I LOVE ROBOTICS", 20, 20, 24, RAYWHITE);
-        DrawText("HIRE ME JIM FAN", 20, 80, 24, RAYWHITE);
+        //title text
+        DrawText("HK", 20, 20, 24, RAYWHITE);
         DrawText(
-            TextFormat("LiDAR distance: %.1f px", lidar.getDetectedDistance()),
+            TextFormat("LiDAR distance: %.1f px", lidar.getDetectedDistance(0)),
             20, 140, 24, GREEN
         );
 
