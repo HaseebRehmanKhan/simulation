@@ -3,6 +3,8 @@
 #include <vector>
 #include <cmath>
 
+#include "raymath.h"
+
 
 bool collidesWithAnyWall(
     Vector2 position,
@@ -77,6 +79,8 @@ public:
 
 };
 
+
+
 int main() {
     const int screenWidth = 1000;
     const int screenHeight = 700;
@@ -88,6 +92,7 @@ int main() {
     const float robotSpeed = 250.0f;
     const float robotRadius = 20.0f;
     LidarSensor lidar;
+    std::vector<Vector2> pointCloud;
     float sensorStep = 1.0f;
 
     InitWindow(screenWidth, screenHeight, "Simulation");
@@ -124,6 +129,7 @@ int main() {
 
         Vector2 proposedVertical = {robotX, proposedY};
 
+
         if (!collidesWithAnyWall(proposedVertical, robotRadius, walls)) {
             robotY = proposedY;
         }
@@ -139,27 +145,52 @@ int main() {
         BeginDrawing();
         ClearBackground(BLACK);
         //for loop for all 36 rays
+        //drawing the walls
+        for (const Rectangle &wall: walls) {
+            DrawRectangleRec(wall, RED);
+        }
         for (int i=0; i<36; i++) {
             //ray angle calculation
             float rayAngle = lidar.getAngle() + i * (2 * PI / 36);
 
             //calculating euclidean ray end points
+
             float rayEndX = robotX + lidar.getDetectedDistance(i) * std::cos(rayAngle);
             float rayEndY = robotY + lidar.getDetectedDistance(i) * std::sin(rayAngle);
+
             //drawing the rays
+
             DrawLine(
             static_cast<int>(robotX),
             static_cast<int>(robotY),
             static_cast<int>(rayEndX),
             static_cast<int>(rayEndY),
-                GREEN
+               GREEN
             );
-        }
-        //drawing the walls
-        for (const Rectangle &wall: walls) {
-            DrawRectangleRec(wall, RED);
+
+            if (lidar.getDetectedDistance(i) < 200) {
+                DrawCircle(static_cast<int>(rayEndX), static_cast<int>(rayEndY), static_cast<int>(3.0f), YELLOW);
+                bool alreadyExists = false;
+                Vector2 newPoint = {rayEndX, rayEndY};
+                for (const auto& existingPoint : pointCloud) {
+
+                    float distance = Vector2Distance(existingPoint, newPoint);
+                    if (distance < 5) {
+                        alreadyExists = true;
+                        break;
+                    }
+
+                    }
+                if (!alreadyExists) {
+                    pointCloud.push_back(newPoint);
+                }
+
+            }
         }
 
+        for (const auto& storedPoint : pointCloud) {
+            DrawCircle(static_cast<int>(storedPoint.x), static_cast<int>(storedPoint.y), static_cast<int>(3.0f), ORANGE);
+        }
         //drawing the robot
         DrawCircle(
             static_cast<int>(robotX),
