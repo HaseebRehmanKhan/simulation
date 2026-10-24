@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <vector>
 #include <cmath>
+#include <iostream>
 
 #include "raymath.h"
 
@@ -82,6 +83,7 @@ public:
 
 
 int main() {
+    const int cellSize = 20;
     const int screenWidth = 1000;
     const int screenHeight = 700;
 
@@ -93,6 +95,7 @@ int main() {
     const float robotRadius = 20.0f;
     LidarSensor lidar;
     std::vector<Vector2> pointCloud;
+    std::vector<std::vector<int>> occupancyGrid(35, std::vector<int>(50, -1));
     float sensorStep = 1.0f;
 
     InitWindow(screenWidth, screenHeight, "Simulation");
@@ -150,6 +153,17 @@ int main() {
         //Draw the scene
         BeginDrawing();
         ClearBackground(BLACK);
+        //drawing occupancy grid, -1 = unknown, 0 = free, 1 = occupied
+        for (int row = 0; row < 35; row++) {
+            for (int col = 0; col < 50; col++) {
+                int screenX = col * cellSize;
+                int screenY = row * cellSize;
+                if (occupancyGrid[row][col] == 1) {
+                    DrawRectangle(screenX, screenY, cellSize, cellSize, PURPLE);
+                }
+                DrawRectangleLines(screenX, screenY, cellSize, cellSize, DARKBLUE);
+            }
+        }
         //for loop for all 36 rays
         //drawing the walls
         if (showWalls) {
@@ -160,6 +174,23 @@ int main() {
         for (int i=0; i<36; i++) {
             //ray angle calculation
             float rayAngle = lidar.getAngle() + i * (2 * PI / 36);
+            for (float distance = 0.0f; distance < lidar.getDetectedDistance(i); distance += sensorStep) {
+                Vector2 sensorPoint = {
+                    robotX + distance * std::cos(rayAngle),
+                    robotY + distance * std::sin(rayAngle)
+
+                };
+                int row = static_cast<int>(sensorPoint.y / cellSize);
+                int col = static_cast<int>(sensorPoint.x / cellSize);
+                if (row >= 0 && row <35 && col >= 0 && col < 50) {
+                    if (occupancyGrid[row][col] != 1) {
+                        occupancyGrid[row][col] = 0;
+
+                    }
+                }
+
+            }
+
 
             //calculating euclidean ray end points
 
@@ -180,6 +211,12 @@ int main() {
                 DrawCircle(static_cast<int>(rayEndX), static_cast<int>(rayEndY), static_cast<int>(3.0f), YELLOW);
                 bool alreadyExists = false;
                 Vector2 newPoint = {rayEndX, rayEndY};
+                int column = static_cast<int>(newPoint.x/cellSize);
+                int row = static_cast<int>(newPoint.y/cellSize);
+                if (column >= 0 && column < 50 && row >= 0 && row < 35) {
+                    occupancyGrid[row][column] = 1;
+                }
+
                 for (const auto& existingPoint : pointCloud) {
 
                     float distance = Vector2Distance(existingPoint, newPoint);
@@ -206,6 +243,8 @@ int main() {
             robotRadius,
             BLUE
         );
+
+
         //title text
         DrawText("HK", 20, 20, 24, RAYWHITE);
         DrawText(
@@ -216,4 +255,11 @@ int main() {
         EndDrawing();
     }
     CloseWindow();
+
+    std::vector<std::vector<int>> numbers = {
+        {1, 2, 3},
+        {4, 5, 6},
+        {7, 8, 9}
+    };
+
 }
