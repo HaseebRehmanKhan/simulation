@@ -1,4 +1,3 @@
-
 #include "raylib.h"
 #include "raymath.h"
 
@@ -10,9 +9,9 @@
 bool collidesWithAnyWall(
     Vector2 position,
     float radius,
-    const std::vector<Rectangle>& walls
+    const std::vector<Rectangle> &walls
 ) {
-    for (const Rectangle& wall : walls) {
+    for (const Rectangle &wall: walls) {
         if (CheckCollisionCircleRec(position, radius, wall)) {
             return true;
         }
@@ -28,14 +27,14 @@ private:
     float rotationSpeed = 2.0f;
 
     std::vector<float> detectedDistances =
-        std::vector<float>(36, 200.0f);
+            std::vector<float>(36, 200.0f);
 
 public:
     void update(
         float dt,
         float robotX,
         float robotY,
-        const std::vector<Rectangle>& walls,
+        const std::vector<Rectangle> &walls,
         float sensorStep
     ) {
         angle += rotationSpeed * dt;
@@ -43,7 +42,6 @@ public:
         for (int i = 0;
              i < static_cast<int>(detectedDistances.size());
              i++) {
-
             float rayAngle = angle + i * (2 * PI / 36);
 
             bool hit = false;
@@ -52,13 +50,12 @@ public:
             for (float distance = 0.0f;
                  distance <= range && !hit;
                  distance += sensorStep) {
-
                 Vector2 sensorPoint = {
                     robotX + distance * std::cos(rayAngle),
                     robotY + distance * std::sin(rayAngle)
                 };
 
-                for (const Rectangle& wall : walls) {
+                for (const Rectangle &wall: walls) {
                     if (CheckCollisionPointRec(sensorPoint, wall)) {
                         hit = true;
                         detectedDistances[i] = distance;
@@ -115,7 +112,7 @@ int main() {
     // -1 = unknown
     //  0 = free
     //  1 = occupied
-    std::vector<std::vector<int>> occupancyGrid(
+    std::vector<std::vector<int> > occupancyGrid(
         gridRows,
         std::vector<int>(gridCols, -1)
     );
@@ -136,7 +133,6 @@ int main() {
     // =================================================
 
     while (!WindowShouldClose()) {
-
         // =============================================
         // PHASE 1: INPUT AND ROBOT MOVEMENT
         // =============================================
@@ -167,9 +163,9 @@ int main() {
         Vector2 proposedHorizontal = {proposedX, robotY};
 
         if (!collidesWithAnyWall(
-                proposedHorizontal,
-                robotRadius,
-                walls)) {
+            proposedHorizontal,
+            robotRadius,
+            walls)) {
             robotX = proposedX;
         }
 
@@ -177,9 +173,9 @@ int main() {
         Vector2 proposedVertical = {robotX, proposedY};
 
         if (!collidesWithAnyWall(
-                proposedVertical,
-                robotRadius,
-                walls)) {
+            proposedVertical,
+            robotRadius,
+            walls)) {
             robotY = proposedY;
         }
 
@@ -205,18 +201,16 @@ int main() {
         // =============================================
 
         for (int i = 0; i < rayCount; i++) {
-
             float rayAngle =
-                lidar.getAngle() + i * (2 * PI / rayCount);
+                    lidar.getAngle() + i * (2 * PI / rayCount);
 
             float detectedDistance =
-                lidar.getDetectedDistance(i);
+                    lidar.getDetectedDistance(i);
 
             // Mark traversed cells as free.
             for (float distance = 0.0f;
                  distance < detectedDistance;
                  distance += sensorStep) {
-
                 Vector2 sensorPoint = {
                     robotX + distance * std::cos(rayAngle),
                     robotY + distance * std::sin(rayAngle)
@@ -246,14 +240,13 @@ int main() {
 
             // Calculate the ray endpoint.
             float rayEndX =
-                robotX + detectedDistance * std::cos(rayAngle);
+                    robotX + detectedDistance * std::cos(rayAngle);
 
             float rayEndY =
-                robotY + detectedDistance * std::sin(rayAngle);
+                    robotY + detectedDistance * std::sin(rayAngle);
 
             // A distance below maximum range indicates a hit.
             if (detectedDistance < lidarRange) {
-
                 Vector2 newPoint = {rayEndX, rayEndY};
 
                 // Mark the endpoint cell as occupied.
@@ -261,7 +254,6 @@ int main() {
                     newPoint.x < screenWidth &&
                     newPoint.y >= 0.0f &&
                     newPoint.y < screenHeight) {
-
                     int col = static_cast<int>(
                         newPoint.x / cellSize
                     );
@@ -277,10 +269,9 @@ int main() {
                 // to existing observations.
                 bool alreadyExists = false;
 
-                for (const Vector2& existingPoint : pointCloud) {
-
+                for (const Vector2 &existingPoint: pointCloud) {
                     float distance =
-                        Vector2Distance(existingPoint, newPoint);
+                            Vector2Distance(existingPoint, newPoint);
 
                     if (distance < 5.0f) {
                         alreadyExists = true;
@@ -293,6 +284,31 @@ int main() {
                 }
             }
         }
+        float dx = collOffSet * cellSize;
+        float dy = rowOffSet * cellSize;
+        float distance = std::sqrt(dx * dx + dy * dy);
+
+        std::vector<std::vector<int> > planningGrid = occupancyGrid;
+        int inflationCells = static_cast<int>(std::ceil(robotRadius / cellSize));
+        for (int row = 0; row < gridRows; row++) {
+            for (int col = 0; col < gridCols; col++) {
+                if (occupancyGrid[row][col] == 1) {
+                    // existing neighbor-inflation loops
+                    for (int rowOffset = (inflationCells * -1); rowOffset <= inflationCells; rowOffset++) {
+                        for (int colOffset = (inflationCells * -1); colOffset <= inflationCells; colOffset++) {
+                            int neighborRow = row + rowOffset;
+                            int neighborCol = col + colOffset;
+
+                            if (neighborRow >= 0 && neighborRow < gridRows &&
+                                neighborCol >= 0 && neighborCol < gridCols) {
+                                planningGrid[neighborRow][neighborCol] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         // =============================================
         // PHASE 4: RENDER THE SCENE
@@ -308,7 +324,6 @@ int main() {
 
         for (int row = 0; row < gridRows; row++) {
             for (int col = 0; col < gridCols; col++) {
-
                 int screenX = col * cellSize;
                 int screenY = row * cellSize;
 
@@ -320,8 +335,7 @@ int main() {
                         cellSize,
                         PURPLE
                     );
-                }
-                else if (occupancyGrid[row][col] == 0) {
+                } else if (occupancyGrid[row][col] == 0) {
                     DrawRectangle(
                         screenX,
                         screenY,
@@ -346,7 +360,7 @@ int main() {
         // ---------------------------------------------
 
         if (showWalls) {
-            for (const Rectangle& wall : walls) {
+            for (const Rectangle &wall: walls) {
                 DrawRectangleRec(wall, RED);
             }
         }
@@ -356,18 +370,17 @@ int main() {
         // ---------------------------------------------
 
         for (int i = 0; i < rayCount; i++) {
-
             float rayAngle =
-                lidar.getAngle() + i * (2 * PI / rayCount);
+                    lidar.getAngle() + i * (2 * PI / rayCount);
 
             float detectedDistance =
-                lidar.getDetectedDistance(i);
+                    lidar.getDetectedDistance(i);
 
             float rayEndX =
-                robotX + detectedDistance * std::cos(rayAngle);
+                    robotX + detectedDistance * std::cos(rayAngle);
 
             float rayEndY =
-                robotY + detectedDistance * std::sin(rayAngle);
+                    robotY + detectedDistance * std::sin(rayAngle);
 
             DrawLine(
                 static_cast<int>(robotX),
@@ -391,7 +404,7 @@ int main() {
         // Draw accumulated point cloud
         // ---------------------------------------------
 
-        for (const Vector2& storedPoint : pointCloud) {
+        for (const Vector2 &storedPoint: pointCloud) {
             DrawCircle(
                 static_cast<int>(storedPoint.x),
                 static_cast<int>(storedPoint.y),
